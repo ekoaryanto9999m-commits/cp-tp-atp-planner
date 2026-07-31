@@ -18,6 +18,8 @@ type AnalyzeInput = {
   jenjang?: string;
   fase?: string;
   mataPelajaran?: string;
+  kelas?: string;
+  sebutan?: string;
 };
 
 export async function analyzeCP(input: AnalyzeInput): Promise<CpAnalysis> {
@@ -39,14 +41,16 @@ Jawab HANYA dalam format JSON valid, tanpa markdown, tanpa penjelasan tambahan, 
   const userPrompt = `
 Jenjang: ${input.jenjang || "-"}
 Fase: ${input.fase || "-"}
+Kelas: ${input.kelas || "-"}
 Mata Pelajaran: ${input.mataPelajaran || "-"}
+Sebutan untuk peserta pembelajaran: ${input.sebutan || "Peserta Didik"}
 
 Teks CP:
 """
 ${input.cpText}
 """
 
-Materi (konteks tambahan, bukan penentu utama):
+Materi (jika ada, hanya sebagai konteks tambahan, bukan penentu utama):
 """
 ${input.materi || "-"}
 """

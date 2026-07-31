@@ -3,19 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePlanner } from "@/context/planner-context";
-import { analyzeCP, CpAnalysis } from "@/lib/ai/cp-analyzer";
+import { analyzeCP } from "@/lib/ai/cp-analyzer";
 
 export default function AnalisisPage() {
-  const { formData } = usePlanner();
-  const [loading, setLoading] = useState(true);
+  const { formData, cpAnalysis, setCpAnalysis } = usePlanner();
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState<CpAnalysis | null>(null);
 
   useEffect(() => {
-    if (!formData) return;
+    if (!formData || cpAnalysis) return;
     setLoading(true);
     setError(null);
-
     analyzeCP({
       cpText: formData.cpText,
       materi: formData.materi,
@@ -23,13 +21,15 @@ export default function AnalisisPage() {
       jenjang: formData.jenjang,
       fase: formData.fase,
       mataPelajaran: formData.mataPelajaran,
+      kelas: formData.kelas,
+      sebutan: formData.sebutan,
     })
-      .then((result) => setAnalysis(result))
+      .then((result) => setCpAnalysis(result))
       .catch((err) =>
         setError(err.message || "Terjadi kesalahan saat menganalisis CP.")
       )
       .finally(() => setLoading(false));
-  }, [formData]);
+  }, [formData, cpAnalysis, setCpAnalysis]);
 
   if (!formData) {
     return (
@@ -63,43 +63,38 @@ export default function AnalisisPage() {
         </div>
       )}
 
-      {analysis && (
+      {cpAnalysis && (
         <div className="space-y-6">
           <Section title="Elemen">
-            <p>{analysis.elemen}</p>
+            <p>{cpAnalysis.elemen}</p>
           </Section>
-
           <Section title="Kompetensi Utama">
             <ul className="list-disc list-inside space-y-1">
-              {analysis.kompetensi_utama.map((item, i) => (
+              {cpAnalysis.kompetensi_utama.map((item, i) => (
                 <li key={i}>{item}</li>
               ))}
             </ul>
           </Section>
-
           <Section title="Lingkup Materi">
             <ul className="list-disc list-inside space-y-1">
-              {analysis.lingkup_materi.map((item, i) => (
+              {cpAnalysis.lingkup_materi.map((item, i) => (
                 <li key={i}>{item}</li>
               ))}
             </ul>
           </Section>
-
           <Section title="Tuntutan Kemampuan">
-            <p>{analysis.tuntutan_kemampuan}</p>
+            <p>{cpAnalysis.tuntutan_kemampuan}</p>
           </Section>
-
           <Section title="Informasi Penting">
             <ul className="list-disc list-inside space-y-1">
-              {analysis.informasi_penting.map((item, i) => (
+              {cpAnalysis.informasi_penting.map((item, i) => (
                 <li key={i}>{item}</li>
               ))}
             </ul>
           </Section>
-
           <Section title="Struktur Kompetensi (Prasyarat)">
             <ul className="space-y-1">
-              {analysis.struktur_kompetensi.map((item, i) => (
+              {cpAnalysis.struktur_kompetensi.map((item, i) => (
                 <li key={i}>
                   <span className="font-medium">{item.kompetensi}</span>
                   {item.prasyarat_dari && (
@@ -113,13 +108,12 @@ export default function AnalisisPage() {
             </ul>
           </Section>
 
-          <button
-            disabled
-            className="w-full bg-gray-300 text-gray-600 py-3 rounded-lg font-medium cursor-not-allowed"
-            title="Fitur ini akan aktif di FASE 5"
+          <Link
+            href="/tp"
+            className="block text-center w-full bg-gray-900 text-white py-3 rounded-lg font-medium hover:bg-gray-700 transition"
           >
-            Lanjut ke Generate TP (segera hadir — FASE 5)
-          </button>
+            Lanjut ke Generate TP
+          </Link>
         </div>
       )}
     </main>

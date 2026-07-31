@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePlanner } from "@/context/planner-context";
 
+const OPSI_SEBUTAN = ["Peserta Didik", "Murid", "Warga Belajar", "Lainnya"];
+const OPSI_SEMESTER = ["Ganjil", "Genap", "Ganjil dan Genap"];
+
 export default function MulaiPage() {
   const router = useRouter();
   const { setFormData } = usePlanner();
@@ -11,8 +14,10 @@ export default function MulaiPage() {
   const [jenjang, setJenjang] = useState("");
   const [fase, setFase] = useState("");
   const [kelas, setKelas] = useState("");
+  const [sebutanPilihan, setSebutanPilihan] = useState("Peserta Didik");
+  const [sebutanCustom, setSebutanCustom] = useState("");
   const [mataPelajaran, setMataPelajaran] = useState("");
-  const [semester, setSemester] = useState("");
+  const [semester, setSemester] = useState("Ganjil");
   const [tahunAjaran, setTahunAjaran] = useState("");
   const [cpText, setCpText] = useState("");
   const [materi, setMateri] = useState("");
@@ -25,10 +30,17 @@ export default function MulaiPage() {
       alert("Capaian Pembelajaran (CP) wajib diisi.");
       return;
     }
+
+    const sebutanFinal =
+      sebutanPilihan === "Lainnya" && sebutanCustom.trim()
+        ? sebutanCustom.trim()
+        : sebutanPilihan;
+
     setFormData({
       jenjang,
       fase,
       kelas,
+      sebutan: sebutanFinal,
       mataPelajaran,
       semester,
       tahunAjaran,
@@ -69,16 +81,20 @@ export default function MulaiPage() {
               className="w-full border rounded-lg px-3 py-2"
             />
           </div>
-          <div>
+          <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Kelas
             </label>
             <input
               value={kelas}
               onChange={(e) => setKelas(e.target.value)}
-              placeholder="mis. X"
+              placeholder="mis. X  (boleh lebih dari satu, pisahkan koma, contoh: VII, VIII, IX)"
               className="w-full border rounded-lg px-3 py-2"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Karena CP disusun per Fase, boleh isi satu kelas atau beberapa
+              kelas sekaligus.
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -95,12 +111,17 @@ export default function MulaiPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Semester
             </label>
-            <input
+            <select
               value={semester}
               onChange={(e) => setSemester(e.target.value)}
-              placeholder="mis. Ganjil"
-              className="w-full border rounded-lg px-3 py-2"
-            />
+              className="w-full border rounded-lg px-3 py-2 bg-white"
+            >
+              {OPSI_SEMESTER.map((opsi) => (
+                <option key={opsi} value={opsi}>
+                  {opsi}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -113,7 +134,37 @@ export default function MulaiPage() {
               className="w-full border rounded-lg px-3 py-2"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Sebutan untuk Peserta Belajar
+            </label>
+            <select
+              value={sebutanPilihan}
+              onChange={(e) => setSebutanPilihan(e.target.value)}
+              className="w-full border rounded-lg px-3 py-2 bg-white"
+            >
+              {OPSI_SEBUTAN.map((opsi) => (
+                <option key={opsi} value={opsi}>
+                  {opsi}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+
+        {sebutanPilihan === "Lainnya" && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tulis Sebutan Sendiri
+            </label>
+            <input
+              value={sebutanCustom}
+              onChange={(e) => setSebutanCustom(e.target.value)}
+              placeholder="mis. Santri, Siswa, dll"
+              className="w-full border rounded-lg px-3 py-2"
+            />
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
