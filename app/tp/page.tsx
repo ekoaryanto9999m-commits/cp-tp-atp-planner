@@ -6,7 +6,7 @@ import { usePlanner } from "@/context/planner-context";
 import { generateTP, TP } from "@/lib/ai/tp-generator";
 import { validateTPs, ValidationMap } from "@/lib/ai/tp-validator";
 import { detectSimilarity, SimilarityFlag } from "@/lib/ai/similarity-detector";
-import { regenerateTP, addTpFromAI } from "@/lib/ai/tp-single";
+import { regenerateTP, addTpFromAI, splitTP } from "@/lib/ai/tp-single";
 
 export default function TpPage() {
   const { formData, cpAnalysis, tpList, setTpList } = usePlanner();
@@ -14,6 +14,7 @@ export default function TpPage() {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+  const [splittingId, setSplittingId] = useState<string | null>(null);
   const [addingFromAI, setAddingFromAI] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validation, setValidation] = useState<ValidationMap>({});
@@ -109,6 +110,41 @@ export default function TpPage() {
     }
   }
 
+  async function handleSplit(targetId: string) {
+    if (!formData || !cpAnalysis) return;
+    setSplittingId(targetId);
+    setError(null);
+    try {
+      const v = validation[targetId];
+      const note = v?.issues
+        .map((i) => `${i.masalah}: ${i.alasan}`)
+        .join(" | ");
+
+      const splitResult = await splitTP({
+        cpText: formData.cpText,
+        materi: formData.materi,
+        analysis: cpAnalysis,
+        sebutan: formData.sebutan,
+        existingTps: tpList,
+        targetId,
+        validatorNote: note,
+      });
+
+      const targetIndex = tpList.findIndex((t) => t.id === targetId);
+      const before = tpList.slice(0, targetIndex);
+      const after = tpList.slice(targetIndex + 1);
+      const merged = [...before, ...splitResult, ...after];
+      const renumbered = merged.map((t, i) => ({ ...t, id: `TP${i + 1}` }));
+
+      setTpList(renumbered);
+      runCheck(renumbered);
+    } catch (err: any) {
+      setError(err.message || "Gagal memecah TP.");
+    } finally {
+      setSplittingId(null);
+    }
+  }
+
   async function handleAddFromAI() {
     if (!formData || !cpAnalysis) return;
     setAddingFromAI(true);
@@ -168,7 +204,7 @@ export default function TpPage() {
       </h1>
       <p className="text-sm text-gray-500 mb-6">
         6-10 TP adalah rekomendasi, bukan aturan mutlak. Edit, hapus, tambah,
-        atau regenerasi TP sesuai kebutuhanmu, lalu klik &quot;Periksa
+        regenerasi, atau pecah TP sesuai kebutuhanmu, lalu klik &quot;Periksa
         TP&quot; untuk validasi ulang.
       </p>
 
@@ -192,6 +228,7 @@ export default function TpPage() {
               const v = validation[tp.id];
               const sim = getSimilarityForTp(tp.id);
               const isRegenerating = regeneratingId === tp.id;
+              const isSplitting = splittingId === tp.id;
               return (
                 <div key={tp.id} className="bg-white border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -217,10 +254,17 @@ export default function TpPage() {
                       )}
                       <button
                         onClick={() => handleRegenerate(tp.id)}
-                        disabled={isRegenerating}
+                        disabled={isRegenerating || isSplitting}
                         className="text-blue-600 text-sm hover:underline disabled:opacity-50"
                       >
                         {isRegenerating ? "Meregenerasi..." : "🔄 Regenerasi"}
+                      </button>
+                      <button
+                        onClick={() => handleSplit(tp.id)}
+                        disabled={isRegenerating || isSplitting}
+                        className="text-purple-600 text-sm hover:underline disabled:opacity-50"
+                      >
+                        {isSplitting ? "Memecah..." : "✂️ Pecah TP"}
                       </button>
                       <button
                         onClick={() => deleteTp(index)}
