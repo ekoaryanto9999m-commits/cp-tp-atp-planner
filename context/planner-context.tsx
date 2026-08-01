@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import type { CpAnalysis } from "@/lib/ai/cp-analyzer";
 import type { TP } from "@/lib/ai/tp-generator";
+import type { CoverageResult } from "@/lib/ai/cp-coverage";
 
 export type FormData = {
   jenjang: string;
@@ -25,6 +26,8 @@ type PlannerContextType = {
   setCpAnalysis: (data: CpAnalysis | null) => void;
   tpList: TP[];
   setTpList: (data: TP[]) => void;
+  coverageResult: CoverageResult | null;
+  setCoverageResult: (data: CoverageResult | null) => void;
 };
 
 const PlannerContext = createContext<PlannerContextType | undefined>(
@@ -34,7 +37,16 @@ const PlannerContext = createContext<PlannerContextType | undefined>(
 export function PlannerProvider({ children }: { children: ReactNode }) {
   const [formData, setFormData] = useState<FormData | null>(null);
   const [cpAnalysis, setCpAnalysis] = useState<CpAnalysis | null>(null);
-  const [tpList, setTpList] = useState<TP[]>([]);
+  const [tpList, setTpListState] = useState<TP[]>([]);
+  const [coverageResult, setCoverageResult] = useState<CoverageResult | null>(
+    null
+  );
+
+  // Kalau TP berubah (edit/hapus/tambah), hasil coverage lama jadi tidak akurat lagi
+  function setTpList(data: TP[]) {
+    setTpListState(data);
+    setCoverageResult(null);
+  }
 
   useEffect(() => {
     function handleBeforeUnload(e: BeforeUnloadEvent) {
@@ -44,7 +56,8 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       }
     }
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    return () =>
+      window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [formData]);
 
   return (
@@ -56,6 +69,8 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         setCpAnalysis,
         tpList,
         setTpList,
+        coverageResult,
+        setCoverageResult,
       }}
     >
       {children}

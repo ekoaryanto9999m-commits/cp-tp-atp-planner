@@ -305,13 +305,12 @@ export default function TpPage() {
             {checking ? "Memeriksa..." : "Periksa TP"}
           </button>
 
-          <button
-            disabled
-            className="w-full bg-gray-300 text-gray-600 py-3 rounded-lg font-medium cursor-not-allowed"
-            title="Fitur ini akan aktif di FASE 6"
+          <Link
+            href="/mapping"
+            className="block text-center w-full bg-gray-900 text-white py-3 rounded-lg font-medium hover:bg-gray-700 transition"
           >
-            Lanjut ke Mapping CP (segera hadir — FASE 6)
-          </button>
+            Lanjut ke Mapping CP
+          </Link>
         </>
       )}
     </main>
