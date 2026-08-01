@@ -7,10 +7,18 @@ import { generateATP, ATPRow } from "@/lib/ai/atp-planner";
 import { validateATP, ATPValidationMap } from "@/lib/ai/atp-validator";
 
 export default function AtpPage() {
-  const { formData, cpAnalysis, tpList, atpList, setAtpList } = usePlanner();
+  const {
+    formData,
+    cpAnalysis,
+    tpList,
+    coverageResult,
+    atpList,
+    setAtpList,
+  } = usePlanner();
 
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validation, setValidation] = useState<ATPValidationMap>({});
   const [attempted, setAttempted] = useState(false);
@@ -57,7 +65,7 @@ export default function AtpPage() {
   useEffect(() => {
     if (!formData || !cpAnalysis || tpList.length === 0) return;
     if (atpList.length > 0) return;
-    if (attempted) return; // sudah pernah dicoba, jangan otomatis ulang lagi—tunggu klik manual
+    if (attempted) return;
     runGenerate();
   }, [formData, cpAnalysis, tpList, atpList.length, attempted, runGenerate]);
 
@@ -108,6 +116,44 @@ export default function AtpPage() {
     return found?.statement || "(TP tidak ditemukan, cek id-nya)";
   }
 
+  async function handleExportDocx() {
+    if (!formData) return;
+    setExporting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/export/docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          formData,
+          cpAnalysis,
+          tpList,
+          coverageResult,
+          atpList,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Gagal export DOCX.");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Perencanaan-${(
+        formData.mataPelajaran || "Pembelajaran"
+      ).replace(/\s+/g, "-")}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || "Gagal export DOCX.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const tampilkanAlokasiWaktu = !!formData?.alokasiWaktu?.trim();
 
   if (!formData) {
@@ -156,13 +202,15 @@ export default function AtpPage() {
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-4">
           <p className="font-medium mb-1">Terjadi kesalahan.</p>
           <p className="text-sm mb-3">{error}</p>
-          <button
-            onClick={runGenerate}
-            disabled={loading}
-            className="bg-red-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
-          >
-            Coba Lagi
-          </button>
+          {atpList.length === 0 && (
+            <button
+              onClick={runGenerate}
+              disabled={loading}
+              className="bg-red-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
+            >
+              Coba Lagi
+            </button>
+          )}
         </div>
       )}
 
@@ -318,11 +366,11 @@ export default function AtpPage() {
           </div>
 
           <button
-            disabled
-            className="w-full bg-gray-300 text-gray-600 py-3 rounded-lg font-medium cursor-not-allowed"
-            title="Fitur ini akan aktif di FASE 9"
+            onClick={handleExportDocx}
+            disabled={exporting}
+            className="w-full bg-gray-900 text-white py-3 rounded-lg font-medium hover:bg-gray-700 disabled:opacity-50"
           >
-            Export (DOCX/PDF/XLSX) — segera hadir — FASE 9
+            {exporting ? "Membuat file..." : "📄 Export ke Word (DOCX)"}
           </button>
         </>
       )}
