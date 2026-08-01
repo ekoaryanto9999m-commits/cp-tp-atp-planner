@@ -131,13 +131,12 @@ export default function MappingPage() {
             </Link>
           </div>
 
-          <button
-            disabled
-            className="w-full bg-gray-300 text-gray-600 py-3 rounded-lg font-medium cursor-not-allowed"
-            title="Fitur ini akan aktif di FASE 7"
+          <Link
+            href="/atp"
+            className="block text-center w-full bg-gray-900 text-white py-3 rounded-lg font-medium hover:bg-gray-700 transition"
           >
-            Lanjut Susun ATP (segera hadir — FASE 7)
-          </button>
+            Lanjut Susun ATP
+          </Link>
         </>
       )}
     </main>

@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import type { CpAnalysis } from "@/lib/ai/cp-analyzer";
 import type { TP } from "@/lib/ai/tp-generator";
 import type { CoverageResult } from "@/lib/ai/cp-coverage";
+import type { ATPRow } from "@/lib/ai/atp-planner";
 
 export type FormData = {
   jenjang: string;
@@ -28,6 +29,8 @@ type PlannerContextType = {
   setTpList: (data: TP[]) => void;
   coverageResult: CoverageResult | null;
   setCoverageResult: (data: CoverageResult | null) => void;
+  atpList: ATPRow[];
+  setAtpList: (data: ATPRow[]) => void;
 };
 
 const PlannerContext = createContext<PlannerContextType | undefined>(
@@ -41,11 +44,12 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const [coverageResult, setCoverageResult] = useState<CoverageResult | null>(
     null
   );
+  const [atpList, setAtpList] = useState<ATPRow[]>([]);
 
-  // Kalau TP berubah (edit/hapus/tambah), hasil coverage lama jadi tidak akurat lagi
   function setTpList(data: TP[]) {
     setTpListState(data);
     setCoverageResult(null);
+    setAtpList([]);
   }
 
   useEffect(() => {
@@ -71,6 +75,8 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         setTpList,
         coverageResult,
         setCoverageResult,
+        atpList,
+        setAtpList,
       }}
     >
       {children}
