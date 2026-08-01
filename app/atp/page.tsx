@@ -13,6 +13,7 @@ export default function AtpPage() {
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validation, setValidation] = useState<ATPValidationMap>({});
+  const [attempted, setAttempted] = useState(false);
 
   const runCheck = useCallback(
     async (rows: ATPRow[]) => {
@@ -31,26 +32,34 @@ export default function AtpPage() {
     [formData]
   );
 
+  const runGenerate = useCallback(async () => {
+    if (!formData || !cpAnalysis || tpList.length === 0) return;
+    setLoading(true);
+    setError(null);
+    setAttempted(true);
+    try {
+      const result = await generateATP({
+        cpText: formData.cpText,
+        materi: formData.materi,
+        alokasiWaktu: formData.alokasiWaktu,
+        analysis: cpAnalysis,
+        tps: tpList,
+      });
+      setAtpList(result);
+      runCheck(result);
+    } catch (err: any) {
+      setError(err.message || "Gagal menyusun ATP.");
+    } finally {
+      setLoading(false);
+    }
+  }, [formData, cpAnalysis, tpList, setAtpList, runCheck]);
+
   useEffect(() => {
     if (!formData || !cpAnalysis || tpList.length === 0) return;
     if (atpList.length > 0) return;
-
-    setLoading(true);
-    setError(null);
-    generateATP({
-      cpText: formData.cpText,
-      materi: formData.materi,
-      alokasiWaktu: formData.alokasiWaktu,
-      analysis: cpAnalysis,
-      tps: tpList,
-    })
-      .then((result) => {
-        setAtpList(result);
-        runCheck(result);
-      })
-      .catch((err) => setError(err.message || "Gagal menyusun ATP."))
-      .finally(() => setLoading(false));
-  }, [formData, cpAnalysis, tpList, atpList.length, setAtpList, runCheck]);
+    if (attempted) return; // sudah pernah dicoba, jangan otomatis ulang lagi—tunggu klik manual
+    runGenerate();
+  }, [formData, cpAnalysis, tpList, atpList.length, attempted, runGenerate]);
 
   function renumber(rows: ATPRow[]): ATPRow[] {
     return rows.map((r, i) => ({ ...r, no: i + 1 }));
@@ -94,6 +103,11 @@ export default function AtpPage() {
     setAtpList([...atpList, newRow]);
   }
 
+  function getTpStatement(tpId: string): string {
+    const found = tpList.find((t) => t.id === tpId);
+    return found?.statement || "(TP tidak ditemukan, cek id-nya)";
+  }
+
   const tampilkanAlokasiWaktu = !!formData?.alokasiWaktu?.trim();
 
   if (!formData) {
@@ -123,7 +137,7 @@ export default function AtpPage() {
   }
 
   return (
-    <main className="max-w-5xl mx-auto px-6 py-10">
+    <main className="max-w-6xl mx-auto px-6 py-10">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">
         Alur Tujuan Pembelajaran (ATP)
       </h1>
@@ -141,7 +155,14 @@ export default function AtpPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-4">
           <p className="font-medium mb-1">Terjadi kesalahan.</p>
-          <p className="text-sm">{error}</p>
+          <p className="text-sm mb-3">{error}</p>
+          <button
+            onClick={runGenerate}
+            disabled={loading}
+            className="bg-red-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            Coba Lagi
+          </button>
         </div>
       )}
 
@@ -153,7 +174,7 @@ export default function AtpPage() {
                 <tr className="bg-gray-100 text-left">
                   <th className="p-2 border-b">No</th>
                   <th className="p-2 border-b">Elemen</th>
-                  <th className="p-2 border-b">CP</th>
+                  <th className="p-2 border-b">Analisis CP</th>
                   <th className="p-2 border-b">Materi Esensial</th>
                   <th className="p-2 border-b">TP</th>
                   {tampilkanAlokasiWaktu && (
@@ -175,7 +196,7 @@ export default function AtpPage() {
                           onChange={(e) =>
                             updateAtp(index, "elemen", e.target.value)
                           }
-                          className="w-32 border rounded px-2 py-1"
+                          className="w-28 border rounded px-2 py-1"
                         />
                       </td>
                       <td className="p-2">
@@ -184,8 +205,8 @@ export default function AtpPage() {
                           onChange={(e) =>
                             updateAtp(index, "cp_reference", e.target.value)
                           }
-                          rows={2}
-                          className="w-40 border rounded px-2 py-1"
+                          rows={3}
+                          className="w-56 border rounded px-2 py-1"
                         />
                       </td>
                       <td className="p-2">
@@ -199,7 +220,7 @@ export default function AtpPage() {
                             )
                           }
                           rows={2}
-                          className="w-40 border rounded px-2 py-1"
+                          className="w-36 border rounded px-2 py-1"
                         />
                       </td>
                       <td className="p-2">
@@ -208,8 +229,11 @@ export default function AtpPage() {
                           onChange={(e) =>
                             updateAtp(index, "tp_id", e.target.value)
                           }
-                          className="w-20 border rounded px-2 py-1"
+                          className="w-20 border rounded px-2 py-1 mb-1"
                         />
+                        <p className="text-xs text-gray-500 w-44">
+                          {getTpStatement(row.tp_id)}
+                        </p>
                       </td>
                       {tampilkanAlokasiWaktu && (
                         <td className="p-2">

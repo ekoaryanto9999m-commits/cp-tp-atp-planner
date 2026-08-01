@@ -18,6 +18,8 @@ type GenerateInput = {
   materi?: string;
   analysis: CpAnalysis;
   sebutan?: string;
+  kelas?: string;
+  semester?: string;
 };
 
 export async function generateTP(input: GenerateInput): Promise<TP[]> {
@@ -25,9 +27,10 @@ export async function generateTP(input: GenerateInput): Promise<TP[]> {
 
   const systemInstruction = `Kamu adalah asisten penyusun Tujuan Pembelajaran (TP) untuk guru di Indonesia.
 Aturan PENTING yang wajib diikuti:
-- 6-10 TP adalah REKOMENDASI, bukan kuota mutlak. Jumlah TP mengikuti kebutuhan kompetensi dalam CP, boleh kurang dari 6 atau lebih dari 10 kalau memang itu yang tepat.
+- Jumlah TP TIDAK dibatasi angka tertentu (bukan wajib 6-10). Jumlah TP ditentukan SEPENUHNYA oleh kebutuhan kompetensi yang terkandung dalam CP — boleh sedikit, boleh banyak, sesuai kebutuhan riil.
+- Kalau materi diisi guru, pertimbangkan cakupan materi tersebut untuk membantu menentukan seberapa detail/berapa banyak TP yang dibutuhkan agar materi tercakup dengan baik.
+- Kalau kelas mencakup lebih dari satu (dipisah koma) dan/atau semester mencakup "Ganjil dan Genap", ini berarti CP berlaku untuk cakupan waktu belajar yang lebih panjang — sesuaikan jumlah dan cakupan TP agar memadai untuk rentang itu (biasanya jadi lebih banyak dibanding kalau hanya untuk 1 kelas/1 semester).
 - Satu TP = satu kemampuan utama. Jangan gabungkan beberapa kemampuan berbeda dalam satu TP.
-- Materi hanya konteks pendukung, TIDAK menentukan jumlah TP.
 - Setiap TP harus jelas mengacu ke kompetensi_utama dari hasil analisis CP yang diberikan.
 - WAJIB gunakan istilah "${sebutan}" sebagai subjek di awal setiap rumusan TP.
 
@@ -49,10 +52,13 @@ Teks CP:
 ${input.cpText}
 """
 
-Materi (konteks tambahan):
+Materi (pertimbangkan untuk cakupan/detail TP):
 """
 ${input.materi || "-"}
 """
+
+Kelas: ${input.kelas || "-"}
+Semester: ${input.semester || "-"}
 
 Hasil analisis CP sebelumnya:
 ${JSON.stringify(input.analysis, null, 2)}

@@ -10,11 +10,13 @@ export default function MappingPage() {
     usePlanner();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attempted, setAttempted] = useState(false);
 
   const runAnalyze = useCallback(async () => {
     if (!cpAnalysis || tpList.length === 0) return;
     setLoading(true);
     setError(null);
+    setAttempted(true);
     try {
       const result = await analyzeCoverage(cpAnalysis, tpList);
       setCoverageResult(result);
@@ -28,8 +30,9 @@ export default function MappingPage() {
   useEffect(() => {
     if (!cpAnalysis || tpList.length === 0) return;
     if (coverageResult) return;
+    if (attempted) return;
     runAnalyze();
-  }, [cpAnalysis, tpList, coverageResult, runAnalyze]);
+  }, [cpAnalysis, tpList, coverageResult, attempted, runAnalyze]);
 
   if (!formData) {
     return (
@@ -76,7 +79,14 @@ export default function MappingPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-4">
           <p className="font-medium mb-1">Terjadi kesalahan.</p>
-          <p className="text-sm">{error}</p>
+          <p className="text-sm mb-3">{error}</p>
+          <button
+            onClick={runAnalyze}
+            disabled={loading}
+            className="bg-red-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            Coba Lagi
+          </button>
         </div>
       )}
 

@@ -19,6 +19,7 @@ export default function TpPage() {
   const [error, setError] = useState<string | null>(null);
   const [validation, setValidation] = useState<ValidationMap>({});
   const [similarity, setSimilarity] = useState<SimilarityFlag[]>([]);
+  const [attempted, setAttempted] = useState(false);
 
   const runCheck = useCallback(
     async (tps: TP[]) => {
@@ -41,25 +42,35 @@ export default function TpPage() {
     [formData]
   );
 
+  const runGenerate = useCallback(async () => {
+    if (!formData || !cpAnalysis) return;
+    setLoading(true);
+    setError(null);
+    setAttempted(true);
+    try {
+      const result = await generateTP({
+        cpText: formData.cpText,
+        materi: formData.materi,
+        analysis: cpAnalysis,
+        sebutan: formData.sebutan,
+        kelas: formData.kelas,
+        semester: formData.semester,
+      });
+      setTpList(result);
+      runCheck(result);
+    } catch (err: any) {
+      setError(err.message || "Gagal membuat TP.");
+    } finally {
+      setLoading(false);
+    }
+  }, [formData, cpAnalysis, setTpList, runCheck]);
+
   useEffect(() => {
     if (!formData || !cpAnalysis) return;
     if (tpList.length > 0) return;
-
-    setLoading(true);
-    setError(null);
-    generateTP({
-      cpText: formData.cpText,
-      materi: formData.materi,
-      analysis: cpAnalysis,
-      sebutan: formData.sebutan,
-    })
-      .then((result) => {
-        setTpList(result);
-        runCheck(result);
-      })
-      .catch((err) => setError(err.message || "Gagal membuat TP."))
-      .finally(() => setLoading(false));
-  }, [formData, cpAnalysis, tpList.length, setTpList, runCheck]);
+    if (attempted) return;
+    runGenerate();
+  }, [formData, cpAnalysis, tpList.length, attempted, runGenerate]);
 
   function updateTp(index: number, field: keyof TP, value: string) {
     const next = [...tpList];
@@ -203,9 +214,10 @@ export default function TpPage() {
         Tujuan Pembelajaran (TP)
       </h1>
       <p className="text-sm text-gray-500 mb-6">
-        6-10 TP adalah rekomendasi, bukan aturan mutlak. Edit, hapus, tambah,
-        regenerasi, atau pecah TP sesuai kebutuhanmu, lalu klik &quot;Periksa
-        TP&quot; untuk validasi ulang.
+        Jumlah TP menyesuaikan kebutuhan CP (dan materi/kelas/semester kalau
+        diisi), bukan angka tetap. Edit, hapus, tambah, regenerasi, atau
+        pecah TP sesuai kebutuhanmu, lalu klik &quot;Periksa TP&quot; untuk
+        validasi ulang.
       </p>
 
       {loading && (
@@ -217,7 +229,16 @@ export default function TpPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-4">
           <p className="font-medium mb-1">Terjadi kesalahan.</p>
-          <p className="text-sm">{error}</p>
+          <p className="text-sm mb-3">{error}</p>
+          {tpList.length === 0 && (
+            <button
+              onClick={runGenerate}
+              disabled={loading}
+              className="bg-red-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
+            >
+              Coba Lagi
+            </button>
+          )}
         </div>
       )}
 

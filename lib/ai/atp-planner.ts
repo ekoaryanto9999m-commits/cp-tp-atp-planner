@@ -36,7 +36,7 @@ Jawab HANYA dalam format JSON array valid, tanpa markdown, tanpa penjelasan tamb
   "id": "ATP1",
   "no": 1,
   "elemen": "elemen/domain terkait",
-  "cp_reference": "bagian CP yang jadi acuan",
+  "cp_reference": "ANALISIS singkat (2-3 kalimat) yang menjelaskan mengapa/bagaimana kompetensi TP ini terbentuk dari CP — merujuk pada tuntutan_kemampuan, lingkup_materi, atau struktur_kompetensi dari hasil analisis CP. BUKAN kutipan mentah teks CP.",
   "materi_esensial": "materi esensial terkait TP ini",
   "tp_id": "TP3",
   "alokasi_waktu": "alokasi waktu untuk TP ini, atau string kosong jika tidak ada info alokasi waktu",
@@ -56,7 +56,7 @@ ${input.materi || "-"}
 
 Alokasi waktu per pertemuan (jika ada): ${input.alokasiWaktu || "-"}
 
-Hasil analisis CP (perhatikan struktur_kompetensi untuk urutan prasyarat):
+Hasil analisis CP (perhatikan struktur_kompetensi untuk urutan prasyarat, dan pakai tuntutan_kemampuan/lingkup_materi untuk menyusun analisis di kolom cp_reference):
 ${JSON.stringify(input.analysis, null, 2)}
 
 Daftar TP yang harus disusun urutannya (SEMUA harus masuk, tidak boleh ada yang hilang):

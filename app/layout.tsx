@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { PlannerProvider } from "@/context/planner-context";
+import TopBar from "@/components/TopBar";
 
 export const metadata: Metadata = {
   title: "CP → TP → ATP Planner",
@@ -19,7 +20,10 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className="antialiased bg-gray-50 min-h-screen">
-        <PlannerProvider>{children}</PlannerProvider>
+        <PlannerProvider>
+          <TopBar />
+          {children}
+        </PlannerProvider>
       </body>
     </html>
   );

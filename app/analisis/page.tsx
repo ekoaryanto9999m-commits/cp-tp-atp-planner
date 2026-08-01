@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePlanner } from "@/context/planner-context";
 import { analyzeCP } from "@/lib/ai/cp-analyzer";
@@ -9,27 +9,37 @@ export default function AnalisisPage() {
   const { formData, cpAnalysis, setCpAnalysis } = usePlanner();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attempted, setAttempted] = useState(false);
+
+  const runAnalyze = useCallback(async () => {
+    if (!formData) return;
+    setLoading(true);
+    setError(null);
+    setAttempted(true);
+    try {
+      const result = await analyzeCP({
+        cpText: formData.cpText,
+        materi: formData.materi,
+        kemampuanAwal: formData.kemampuanAwal,
+        jenjang: formData.jenjang,
+        fase: formData.fase,
+        mataPelajaran: formData.mataPelajaran,
+        kelas: formData.kelas,
+        sebutan: formData.sebutan,
+      });
+      setCpAnalysis(result);
+    } catch (err: any) {
+      setError(err.message || "Terjadi kesalahan saat menganalisis CP.");
+    } finally {
+      setLoading(false);
+    }
+  }, [formData, setCpAnalysis]);
 
   useEffect(() => {
     if (!formData || cpAnalysis) return;
-    setLoading(true);
-    setError(null);
-    analyzeCP({
-      cpText: formData.cpText,
-      materi: formData.materi,
-      kemampuanAwal: formData.kemampuanAwal,
-      jenjang: formData.jenjang,
-      fase: formData.fase,
-      mataPelajaran: formData.mataPelajaran,
-      kelas: formData.kelas,
-      sebutan: formData.sebutan,
-    })
-      .then((result) => setCpAnalysis(result))
-      .catch((err) =>
-        setError(err.message || "Terjadi kesalahan saat menganalisis CP.")
-      )
-      .finally(() => setLoading(false));
-  }, [formData, cpAnalysis, setCpAnalysis]);
+    if (attempted) return;
+    runAnalyze();
+  }, [formData, cpAnalysis, attempted, runAnalyze]);
 
   if (!formData) {
     return (
@@ -59,11 +69,18 @@ export default function AnalisisPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-4">
           <p className="font-medium mb-1">Gagal menganalisis CP.</p>
-          <p className="text-sm">{error}</p>
+          <p className="text-sm mb-3">{error}</p>
+          <button
+            onClick={runAnalyze}
+            disabled={loading}
+            className="bg-red-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            Coba Lagi
+          </button>
         </div>
       )}
 
-      {cpAnalysis && (
+      {cpAnalysis && !loading && (
         <div className="space-y-6">
           <Section title="Elemen">
             <p>{cpAnalysis.elemen}</p>
