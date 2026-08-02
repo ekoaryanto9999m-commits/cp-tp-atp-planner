@@ -68,11 +68,24 @@ Buat ulang TP dengan id "${input.targetId}" sesuai aturan di atas.
   return parseAiJson<TP>(rawText);
 }
 
-export async function addTpFromAI(input: BaseInput): Promise<TP> {
+export async function addTpFromAI(
+  input: BaseInput & { kkoHint?: string; kompetensiHint?: string }
+): Promise<TP> {
   const sebutan = input.sebutan || "Peserta Didik";
+  const hasHint = !!(input.kkoHint?.trim() || input.kompetensiHint?.trim());
+
+  const hintInstruction = hasHint
+    ? `PENTING — Guru sudah menentukan arah TP ini secara spesifik:
+${input.kkoHint?.trim() ? `- WAJIB gunakan kata kerja operasional (KKO): "${input.kkoHint.trim()}"` : ""}
+${input.kompetensiHint?.trim() ? `- WAJIB fokus pada kompetensi: "${input.kompetensiHint.trim()}"` : ""}
+Susun TP yang sesuai persis dengan arahan ini, tetap relevan dengan CP yang diberikan.`
+    : `Guru TIDAK memberikan arahan spesifik — kamu bebas menentukan KKO dan kompetensi yang paling relevan dan belum tercakup di TP yang sudah ada.`;
 
   const systemInstruction = `Kamu adalah asisten penyusun Tujuan Pembelajaran (TP) untuk guru di Indonesia.
 Tugasmu: buat SATU TP TAMBAHAN yang belum ada di daftar TP yang sudah dibuat, untuk melengkapi kompetensi dari CP yang mungkin belum terwakili.
+
+${hintInstruction}
+
 Aturan:
 - Satu TP = satu kemampuan utama.
 - WAJIB gunakan istilah "${sebutan}" sebagai subjek di awal rumusan TP.

@@ -20,6 +20,8 @@ export default function TpPage() {
   const [validation, setValidation] = useState<ValidationMap>({});
   const [similarity, setSimilarity] = useState<SimilarityFlag[]>([]);
   const [attempted, setAttempted] = useState(false);
+  const [kkoHint, setKkoHint] = useState("");
+  const [kompetensiHint, setKompetensiHint] = useState("");
 
   const runCheck = useCallback(
     async (tps: TP[]) => {
@@ -167,10 +169,14 @@ export default function TpPage() {
         analysis: cpAnalysis,
         sebutan: formData.sebutan,
         existingTps: tpList,
+        kkoHint,
+        kompetensiHint,
       });
       const next = [...tpList, newTp];
       setTpList(next);
       runCheck(next);
+      setKkoHint("");
+      setKompetensiHint("");
     } catch (err: any) {
       setError(err.message || "Gagal menambah TP dari AI.");
     } finally {
@@ -353,10 +359,31 @@ export default function TpPage() {
             >
               + Tambah TP Manual
             </button>
+          </div>
+
+          <div className="bg-white border rounded-lg p-3 mb-3">
+            <p className="text-xs font-medium text-gray-600 mb-2">
+              Tambah TP dari AI — isi KKO/Kompetensi kalau mau terarah,
+              kosongkan kalau mau AI bebas menentukan
+            </p>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <input
+                value={kkoHint}
+                onChange={(e) => setKkoHint(e.target.value)}
+                placeholder="KKO yang diinginkan (opsional)"
+                className="border rounded-lg px-2 py-1 text-sm"
+              />
+              <input
+                value={kompetensiHint}
+                onChange={(e) => setKompetensiHint(e.target.value)}
+                placeholder="Kompetensi yang diinginkan (opsional)"
+                className="border rounded-lg px-2 py-1 text-sm"
+              />
+            </div>
             <button
               onClick={handleAddFromAI}
               disabled={addingFromAI}
-              className="flex-1 border border-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-100 disabled:opacity-50"
+              className="w-full border border-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-100 disabled:opacity-50"
             >
               {addingFromAI ? "Membuat..." : "+ Tambah TP dari AI"}
             </button>
