@@ -9,11 +9,15 @@ import {
   WidthType,
   AlignmentType,
   Packer,
+  PageOrientation,
 } from "docx";
 import type { CpAnalysis } from "@/lib/ai/cp-analyzer";
 import type { TP } from "@/lib/ai/tp-generator";
 import type { CoverageResult } from "@/lib/ai/cp-coverage";
 import type { ATPRow } from "@/lib/ai/atp-planner";
+
+export type ExportMode = "lengkap" | "atp_saja";
+export type ColumnKey = "elemen" | "cp_reference" | "materi_esensial" | "tp_id";
 
 export type ExportData = {
   formData: {
@@ -33,6 +37,15 @@ export type ExportData = {
   tpList: TP[];
   coverageResult: CoverageResult | null;
   atpList: ATPRow[];
+  mode: ExportMode;
+  columnOrder: ColumnKey[];
+};
+
+const COLUMN_LABELS: Record<ColumnKey, string> = {
+  elemen: "Elemen",
+  cp_reference: "Analisis CP",
+  materi_esensial: "Materi Esensial",
+  tp_id: "TP",
 };
 
 function heading(text: string) {
@@ -83,8 +96,10 @@ function cell(text: string, opts?: { header?: boolean; width?: number }) {
 }
 
 export async function buildDocx(data: ExportData): Promise<Buffer> {
-  const { formData, cpAnalysis, tpList, coverageResult, atpList } = data;
+  const { formData, cpAnalysis, tpList, coverageResult, atpList, mode, columnOrder } =
+    data;
   const children: any[] = [];
+  const isLengkap = mode === "lengkap";
 
   children.push(
     new Paragraph({
@@ -115,7 +130,7 @@ export async function buildDocx(data: ExportData): Promise<Buffer> {
   if (formData.alokasiWaktu?.trim()) {
     identitasRows.push(["Alokasi Waktu per Pertemuan", formData.alokasiWaktu]);
   }
-  if (formData.kemampuanAwal?.trim()) {
+  if (isLengkap && formData.kemampuanAwal?.trim()) {
     identitasRows.push(["Kemampuan Awal", formData.kemampuanAwal]);
   }
 
@@ -126,8 +141,8 @@ export async function buildDocx(data: ExportData): Promise<Buffer> {
         ([label, value]) =>
           new TableRow({
             children: [
-              cell(label, { header: true, width: 30 }),
-              cell(value, { width: 70 }),
+              cell(label, { header: true, width: 25 }),
+              cell(value, { width: 75 }),
             ],
           })
       ),
@@ -137,12 +152,12 @@ export async function buildDocx(data: ExportData): Promise<Buffer> {
   children.push(subHeading("Capaian Pembelajaran (CP)"));
   children.push(bodyText(formData.cpText));
 
-  if (formData.materi?.trim()) {
+  if (isLengkap && formData.materi?.trim()) {
     children.push(subHeading("Materi"));
     children.push(bodyText(formData.materi));
   }
 
-  if (cpAnalysis) {
+  if (isLengkap && cpAnalysis) {
     children.push(heading("Hasil Analisis CP"));
     children.push(subHeading("Elemen"));
     children.push(bodyText(cpAnalysis.elemen));
@@ -166,7 +181,7 @@ export async function buildDocx(data: ExportData): Promise<Buffer> {
     );
   }
 
-  if (tpList.length > 0) {
+  if (isLengkap && tpList.length > 0) {
     children.push(heading("Tujuan Pembelajaran (TP)"));
     children.push(
       new Table({
@@ -174,8 +189,8 @@ export async function buildDocx(data: ExportData): Promise<Buffer> {
         rows: [
           new TableRow({
             children: [
-              cell("ID", { header: true, width: 10 }),
-              cell("Rumusan TP", { header: true, width: 45 }),
+              cell("ID", { header: true, width: 8 }),
+              cell("Rumusan TP", { header: true, width: 47 }),
               cell("KKO", { header: true, width: 15 }),
               cell("Kompetensi", { header: true, width: 30 }),
             ],
@@ -196,7 +211,7 @@ export async function buildDocx(data: ExportData): Promise<Buffer> {
     );
   }
 
-  if (coverageResult) {
+  if (isLengkap && coverageResult) {
     children.push(heading("CP → TP Mapping (Cakupan)"));
     children.push(
       new Paragraph({
@@ -216,10 +231,10 @@ export async function buildDocx(data: ExportData): Promise<Buffer> {
         rows: [
           new TableRow({
             children: [
-              cell("Kompetensi", { header: true, width: 35 }),
-              cell("Status", { header: true, width: 15 }),
-              cell("TP Terkait", { header: true, width: 15 }),
-              cell("Catatan", { header: true, width: 35 }),
+              cell("Kompetensi", { header: true, width: 30 }),
+              cell("Status", { header: true, width: 12 }),
+              cell("TP Terkait", { header: true, width: 13 }),
+              cell("Catatan", { header: true, width: 45 }),
             ],
           }),
           ...coverageResult.items.map(
@@ -245,15 +260,30 @@ export async function buildDocx(data: ExportData): Promise<Buffer> {
   if (atpList.length > 0) {
     children.push(heading("Alur Tujuan Pembelajaran (ATP)"));
     const tampilkanAlokasi = !!formData.alokasiWaktu?.trim();
+
+    const orderedKeys: ColumnKey[] =
+      columnOrder && columnOrder.length > 0
+        ? columnOrder
+        : ["elemen", "cp_reference", "materi_esensial", "tp_id"];
+
+    const widthPerColumn = tampilkanAlokasi ? 18 : 22;
+
     const headerCells = [
       cell("No", { header: true, width: 5 }),
-      cell("Elemen", { header: true, width: 12 }),
-      cell("CP", { header: true, width: 20 }),
-      cell("Materi Esensial", { header: true, width: 18 }),
-      cell("TP", { header: true, width: tampilkanAlokasi ? 30 : 45 }),
+      ...orderedKeys.map((key) =>
+        cell(COLUMN_LABELS[key], { header: true, width: widthPerColumn })
+      ),
     ];
     if (tampilkanAlokasi) {
-      headerCells.push(cell("Alokasi Waktu", { header: true, width: 15 }));
+      headerCells.push(cell("Alokasi Waktu", { header: true, width: 10 }));
+    }
+
+    function getCellValue(row: ATPRow, key: ColumnKey): string {
+      if (key === "tp_id") {
+        const tp = tpList.find((t) => t.id === row.tp_id);
+        return tp ? `${row.tp_id}: ${tp.statement}` : row.tp_id;
+      }
+      return (row as any)[key] || "-";
     }
 
     children.push(
@@ -262,14 +292,9 @@ export async function buildDocx(data: ExportData): Promise<Buffer> {
         rows: [
           new TableRow({ children: headerCells }),
           ...atpList.map((row) => {
-            const tp = tpList.find((t) => t.id === row.tp_id);
-            const tpText = tp ? `${row.tp_id}: ${tp.statement}` : row.tp_id;
             const rowCells = [
               cell(String(row.no)),
-              cell(row.elemen),
-              cell(row.cp_reference),
-              cell(row.materi_esensial),
-              cell(tpText),
+              ...orderedKeys.map((key) => cell(getCellValue(row, key))),
             ];
             if (tampilkanAlokasi) {
               rowCells.push(cell(row.alokasi_waktu || "-"));
@@ -281,6 +306,27 @@ export async function buildDocx(data: ExportData): Promise<Buffer> {
     );
   }
 
-  const doc = new Document({ sections: [{ children }] });
+  const doc = new Document({
+    sections: [
+      {
+        properties: {
+          page: {
+            size: {
+              width: 18720, // 13 inci
+              height: 12240, // 8.5 inci
+              orientation: PageOrientation.LANDSCAPE,
+            },
+            margin: {
+              top: 900,
+              bottom: 900,
+              left: 900,
+              right: 900,
+            },
+          },
+        },
+        children,
+      },
+    ],
+  });
   return Packer.toBuffer(doc);
 }

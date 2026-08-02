@@ -6,9 +6,10 @@ export async function POST(req: NextRequest) {
     const data: ExportData = await req.json();
     const buffer = await buildDocx(data);
 
+    const suffix = data.mode === "atp_saja" ? "ATP" : "Lengkap";
     const namaFile = `Perencanaan-${(
       data.formData.mataPelajaran || "Pembelajaran"
-    ).replace(/\s+/g, "-")}.docx`;
+    ).replace(/\s+/g, "-")}-${suffix}.docx`;
 
     return new NextResponse(buffer, {
       status: 200,

@@ -65,7 +65,6 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const [atpList, setAtpList] = useState<ATPRow[]>([]);
   const hasLoaded = useRef(false);
 
-  // Muat data tersimpan (kalau ada) begitu aplikasi pertama dibuka
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -84,7 +83,6 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Simpan otomatis setiap kali ada perubahan (setelah proses muat awal selesai)
   useEffect(() => {
     if (!hasLoaded.current) return;
     const data: StoredState = {
@@ -101,11 +99,17 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     }
   }, [formData, cpAnalysis, tpList, coverageResult, atpList]);
 
+  // Setiap kali form BARU disubmit, semua hasil AI dari project sebelumnya
+  // (analisis, TP, mapping, ATP) otomatis dikosongkan lagi, supaya tidak
+  // "nyangkut" isi lama dan halaman-halaman berikutnya generate ulang.
   function setFormData(data: FormData) {
     setFormDataState(data);
+    setCpAnalysis(null);
+    setTpListState([]);
+    setCoverageResult(null);
+    setAtpList([]);
   }
 
-  // Kalau TP berubah (edit/hapus/tambah), hasil Coverage & ATP lama jadi tidak akurat lagi
   function setTpList(data: TP[]) {
     setTpListState(data);
     setCoverageResult(null);
